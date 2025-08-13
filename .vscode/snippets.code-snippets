@@ -1,0 +1,25 @@
+{
+    "Check Guidelines Reminder": {
+        "prefix": "guidelines",
+        "body": [
+            "// REMINDER: Check COPILOT_GUIDELINES.md before proceeding",
+            "// Guidelines: ${WORKSPACE_FOLDER}/COPILOT_GUIDELINES.md",
+            "// Last checked: ${CURRENT_DATE}",
+            "$0"
+        ],
+        "description": "Reminder to check development guidelines"
+    },
+    "Guidelines Header": {
+        "prefix": "guideline-header",
+        "body": [
+            "/**",
+            " * Following COPILOT_GUIDELINES.md requirements:",
+            " * - Project Standards: ${1:checked}",
+            " * - Code Review: ${2:pending}",
+            " * - Architecture: ${3:approved}",
+            " */",
+            "$0"
+        ],
+        "description": "Header comment with guidelines checklist"
+    }
+}
