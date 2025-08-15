@@ -4,16 +4,17 @@ import { DragHandleIcon } from './DragHandleIcon';
 
 interface Column {
   key: string;
-  render?: (value: any, row: any) => React.ReactNode;
+  render?: (value: any, row: any, onToggleExpand?: (id: string) => void) => React.ReactNode;
 }
 
 interface SortableRowProps {
   id: string;
   row: Record<string, any>;
   columns: Column[];
+  onToggleExpand?: (id: string) => void;
 }
 
-export function SortableRow({ id, row, columns }: SortableRowProps) {
+export function SortableRow({ id, row, columns, onToggleExpand }: SortableRowProps) {
   const {
     attributes,
     listeners,
@@ -34,6 +35,7 @@ export function SortableRow({ id, row, columns }: SortableRowProps) {
       ref={setNodeRef}
       style={style}
       className={`sortable-row ${isDragging ? 'dragging' : ''}`}
+      data-level={row.level || 0}
     >
       <td className="drag-handle-cell">
         <div 
@@ -47,7 +49,7 @@ export function SortableRow({ id, row, columns }: SortableRowProps) {
       </td>
       {columns.map((column) => (
         <td key={column.key}>
-          {column.render ? column.render(row[column.key], row) : row[column.key]}
+          {column.render ? column.render(row[column.key], row, onToggleExpand) : row[column.key]}
         </td>
       ))}
     </tr>

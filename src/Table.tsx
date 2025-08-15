@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -20,40 +20,131 @@ import {
 } from '@dnd-kit/modifiers';
 import { SortableRow } from './SortableRow';
 import { TableHeader } from './TableHeader';
+import { dummyData, type TableData } from './dummyData';
 import './Table.css';
 
-export interface TableData {
-  id: string;
-  name: string;
-  age: number;
-  city: string;
-  email: string;
+// Re-export TableData for other components that might need it
+export type { TableData };
+
+interface FlatTableData extends TableData {
+  level: number;
+  hasChildren: boolean;
+  isExpanded?: boolean;
+  parentId?: string;
 }
 
 interface Column {
   key: string;
   label: string;
-  render?: (value: any, row: any) => React.ReactNode;
+  render?: (value: any, row: any, onToggleExpand?: (id: string) => void) => React.ReactNode;
 }
 
 const columns: Column[] = [
-  { key: 'name', label: 'Name' },
+  { 
+    key: 'name', 
+    label: 'Name',
+    render: (value: string, row: FlatTableData, onToggleExpand?: (id: string) => void) => (
+      <div style={{ 
+        paddingLeft: `${row.level * 20}px`,
+        display: 'flex',
+        alignItems: 'center'
+      }}>
+        {row.hasChildren && (
+          <span 
+            style={{ 
+              marginRight: '8px', 
+              cursor: 'pointer',
+              userSelect: 'none',
+              fontSize: '12px',
+              width: '16px',
+              textAlign: 'center',
+              color: '#6b7280'
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleExpand?.(row.id);
+            }}
+          >
+            {row.isExpanded ? '▼' : '▶'}
+          </span>
+        )}
+        <span style={{ marginLeft: row.hasChildren ? '0' : '24px' }}>
+          {value}
+        </span>
+      </div>
+    )
+  },
   { key: 'age', label: 'Age' },
   { key: 'city', label: 'City' },
   { key: 'email', label: 'Email' },
 ];
 
-const initialData: TableData[] = [
-  { id: '1', name: 'John Doe', age: 30, city: 'New York', email: 'john@example.com' },
-  { id: '2', name: 'Jane Smith', age: 25, city: 'Los Angeles', email: 'jane@example.com' },
-  { id: '3', name: 'Bob Johnson', age: 35, city: 'Chicago', email: 'bob@example.com' },
-  { id: '4', name: 'Alice Brown', age: 28, city: 'Houston', email: 'alice@example.com' },
-  { id: '5', name: 'Charlie Wilson', age: 42, city: 'Phoenix', email: 'charlie@example.com' },
-  { id: '6', name: 'Diana Davis', age: 33, city: 'Philadelphia', email: 'diana@example.com' },
-];
+// Function to flatten hierarchical data
+function flattenData(data: TableData[], level = 0, parentId?: string, expandedIds: Set<string> = new Set()): FlatTableData[] {
+  let result: FlatTableData[] = [];
+  
+  data.forEach(item => {
+    const hasChildren = !!(item.children && item.children.length > 0);
+    const isExpanded = expandedIds.has(item.id);
+    
+    const flatItem: FlatTableData = {
+      ...item,
+      level,
+      hasChildren,
+      isExpanded,
+      parentId
+    };
+    
+    result.push(flatItem);
+    
+    if (item.children && item.children.length > 0 && isExpanded) {
+      result = result.concat(flattenData(item.children, level + 1, item.id, expandedIds));
+    }
+  });
+  
+  return result;
+}
 
 export function Table() {
-  const [data, setData] = useState<TableData[]>(initialData);
+  // Track which items are expanded
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(
+    () => {
+      // Start with all parent items expanded
+      const initialExpanded = new Set<string>();
+      const addExpandedIds = (items: TableData[]) => {
+        items.forEach(item => {
+          if (item.children && item.children.length > 0) {
+            initialExpanded.add(item.id);
+            addExpandedIds(item.children);
+          }
+        });
+      };
+      addExpandedIds(dummyData);
+      return initialExpanded;
+    }
+  );
+
+  const [flatData, setFlatData] = useState<FlatTableData[]>(
+    () => flattenData(dummyData, 0, undefined, expandedIds)
+  );
+
+  // Update flat data when expanded state changes
+  useEffect(() => {
+    setFlatData(flattenData(dummyData, 0, undefined, expandedIds));
+  }, [expandedIds]);
+
+  // Handle expand/collapse
+  const toggleExpanded = (id: string) => {
+    setExpandedIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
   
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -70,7 +161,7 @@ export function Table() {
     const { active, over } = event;
 
     if (over && active.id !== over.id) {
-      setData((items) => {
+      setFlatData((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
 
@@ -81,7 +172,7 @@ export function Table() {
 
   return (
     <div className="table-container">
-      <h2>Sortable Table with Drag & Drop</h2>
+      <h2>Sortable Hierarchical Table with Drag & Drop</h2>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
@@ -92,13 +183,14 @@ export function Table() {
           <table className="sortable-table">
             <TableHeader columns={columns} />
             <tbody>
-              <SortableContext items={data} strategy={verticalListSortingStrategy}>
-                {data.map((row) => (
+              <SortableContext items={flatData} strategy={verticalListSortingStrategy}>
+                {flatData.map((row) => (
                   <SortableRow 
                     key={row.id} 
                     id={row.id} 
                     row={row} 
                     columns={columns} 
+                    onToggleExpand={toggleExpanded}
                   />
                 ))}
               </SortableContext>

@@ -134,6 +134,51 @@
   color: #ffc107;
 }
 
+/* Hierarchical tree styles */
+.tree-node {
+  display: flex;
+  align-items: center;
+}
+
+.tree-expand-icon {
+  margin-right: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  width: 16px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.tree-expand-icon:hover {
+  color: #374151;
+}
+
+.tree-node-content {
+  flex: 1;
+}
+
+/* Different background colors for different levels */
+.sortable-row[data-level="1"] {
+  background-color: #f9fafb;
+}
+
+.sortable-row[data-level="2"] {
+  background-color: #f3f4f6;
+}
+
+.sortable-row[data-level="0"]:hover {
+  background-color: #f8f9fa;
+}
+
+.sortable-row[data-level="1"]:hover {
+  background-color: #f1f5f9;
+}
+
+.sortable-row[data-level="2"]:hover {
+  background-color: #e5e7eb;
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .table-container {
