@@ -1,5 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { DragHandleIcon } from './DragHandleIcon';
 
 interface Column {
   key: string;
@@ -32,10 +33,18 @@ export function SortableRow({ id, row, columns }: SortableRowProps) {
     <tr
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
       className={`sortable-row ${isDragging ? 'dragging' : ''}`}
     >
+      <td className="drag-handle-cell">
+        <div 
+          className="drag-handle" 
+          {...attributes} 
+          {...listeners}
+          title="Drag to reorder"
+        >
+          <DragHandleIcon />
+        </div>
+      </td>
       {columns.map((column) => (
         <td key={column.key}>
           {column.render ? column.render(row[column.key], row) : row[column.key]}

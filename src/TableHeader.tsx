@@ -12,6 +12,7 @@ export function TableHeader({ columns }: TableHeaderProps) {
   return (
     <thead>
       <tr>
+        <th className="drag-handle-header"></th>
         {columns.map((column) => (
           <th key={column.key}>{column.label}</th>
         ))}
